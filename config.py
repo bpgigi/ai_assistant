@@ -1,5 +1,6 @@
 # Please install OpenAI SDK first: `pip3 install openai`
 import os
+import json
 from openai import OpenAI
 def ask_question(question):
     # question = input("What is the question:")

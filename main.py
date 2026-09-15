@@ -1,4 +1,4 @@
-import assistant
+from assistant import Assistant,User
 def print_hi():
     print("="*5 + "AI学习助手" + "="*5)
     print("1.向AI提问")
@@ -7,22 +7,27 @@ def print_hi():
     print("4.修改AI角色")
     print("5.退出")
     print("请选择：",end="")
-# 按装订区域中的绿色按钮以运行脚本。
-if __name__ == '__main__':
-    print_hi()
-    choice = input()
-    match choice:
-        case "1":
-            print("你好！我是大笨猪，有什么可以帮你。")
-            question = input()
-            assistant.ai_assistant(question)
-        case "2":
-            pass
-        case "3":
-            pass
-        case "4":
-            pass
-        case "5":
-            exit()
 
-
+if __name__ == "__main__":
+    u1 = User()
+    assist1 = Assistant()
+    print("="*20)
+    while True:
+        print_hi()
+        choice = input()
+        #while True:   --->死循环一直一个case执行
+        match choice:
+            case "1":
+                # question = input("What is the question:")
+                # config.ask_question(question)
+                u1.ask_ai()
+            case "2":
+                u1.check_history()
+            case "3":
+                u1.delete_history()
+                #break 选项里的函数报错才break
+            case "4":
+                prompt = input("What is the prompt:")
+                assist1.set_prompt(prompt)
+            case "5":
+                break
