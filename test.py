@@ -1,5 +1,7 @@
 import json
-
+import os
+from openai import OpenAI
+import config
 class User:
     def __init__(self):
         #history_dict = {}->不行，必须加self
@@ -28,11 +30,13 @@ class User:
             json.dump(self.history_dict, f, ensure_ascii=False, indent=4)
     def ask_ai(self):
         print("你好！我是大笨猪，有什么可以帮你。")
-        question = input()
+        # question = input()
+        question = input("What is the question:")
+        answer = config.ask_question(question)
         self.add_history(question,True)
-        answer = "喵喵喵"
+
         self.add_history(answer,False)
-        print(answer)
+        #print(answer)
     def check_history(self):
         with open("history.json", "r", encoding="utf-8") as f:
             history_dict = json.load(f)
@@ -75,6 +79,8 @@ if __name__ == "__main__":
         #while True:   --->死循环一直一个case执行
         match choice:
             case "1":
+                # question = input("What is the question:")
+                # config.ask_question(question)
                 User().ask_ai()
             case "2":
                 User().check_history()
