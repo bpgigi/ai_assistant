@@ -6,11 +6,12 @@ def ask_question(question):
     client = OpenAI(
         api_key=os.environ.get('DEEPSEEK_API_KEY'),
         base_url="https://api.deepseek.com")
-
+    with open("prompt.json", "r", encoding="utf-8") as f:
+        prompt = json.load(f)
     response = client.chat.completions.create(
         model="deepseek-flash",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant"},
+            {"role": "system", "content": prompt},
             {"role": "user", "content": question},
         ],
         stream=False,

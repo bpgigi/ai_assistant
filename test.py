@@ -1,6 +1,4 @@
 import json
-import os
-from openai import OpenAI
 import config
 class User:
     def __init__(self):
@@ -38,23 +36,37 @@ class User:
         self.add_history(answer,False)
         #print(answer)
     def check_history(self):
-        with open("history.json", "r", encoding="utf-8") as f:
-            history_dict = json.load(f)
-            choice = input("你想要哪个历史记录？你的问题->1,我的回答->2:")
-            if choice == "1":
-                print(history_dict["user"])
-            else:
-                print(history_dict["assistant"])
+
+        choice = input("你想要哪个历史记录？你的问题->1,我的回答->2:")
+        if choice == "1":
+            print(self.history_dict["user"])
+        else:
+            print(self.history_dict["assistant"])
     def delete_history(self):
         # 清空直接空字典？
         self.history_dict = {"user": [], "assistant": []}
         with open("history.json", "w", encoding="utf-8") as f:
             json.dump(self.history_dict, f, ensure_ascii=False, indent=4)
-    def reset_ai(self):
-        pass
+    # def reset_ai(self):
+    #     pass
 class Assistant:
-    def __init__(self,str):
-        self.promopt = str
+    def __init__(self,prompt):
+        self.prompt = prompt
+        self.load_prompt()
+    def load_prompt(self):
+        try:
+            with open("prompt.json", "r", encoding="utf-8") as f:
+                self.prompt = json.load(f)
+        except FileNotFoundError:
+            print("第一次使用，已创建好助手")
+            with open("prompt.json", "w",encoding="utf-8") as f:
+                json.dump(self.prompt, f, ensure_ascii=False, indent=4)
+
+    def set_prompt(self,prompt):
+        self.prompt = prompt
+        with open("prompt.json", "w", encoding="utf-8") as f:
+            json.dump(self.prompt, f, ensure_ascii=False, indent=4)
+
 
 def print_hi():
     print("="*5 + "AI学习助手" + "="*5)
@@ -72,6 +84,7 @@ if __name__ == "__main__":
     # print(u1.history_dict["user"])
     # print(type(u1.history_dict["user"]))
     # print(u1.history_dict["assistant"])
+    #assist1 = Assistant("You are a helpful assistant")
     print("="*20)
     while True:
         print_hi()
@@ -81,11 +94,11 @@ if __name__ == "__main__":
             case "1":
                 # question = input("What is the question:")
                 # config.ask_question(question)
-                User().ask_ai()
+                u1.ask_ai()
             case "2":
-                User().check_history()
+                u1.check_history()
             case "3":
-                User().delete_history()
+                u1.delete_history()
                 #break 选项里的函数报错才break
             case "4":
                 pass
