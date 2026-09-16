@@ -1,4 +1,5 @@
-from assistant import Assistant,User
+from assistant import Assistant
+from Conversation import Conversation
 def print_hi():
     print("="*5 + "AI学习助手" + "="*5)
     print("1.向AI提问")
@@ -9,8 +10,8 @@ def print_hi():
     print("请选择：",end="")
 
 if __name__ == "__main__":
-    u1 = User()
-    assist1 = Assistant()
+    c1 = Conversation()
+    assist1 = Assistant(c1)
     print("="*20)
     while True:
         print_hi()
@@ -20,11 +21,11 @@ if __name__ == "__main__":
             case "1":
                 # question = input("What is the question:")
                 # config.ask_question(question)
-                u1.ask_ai()
+                assist1.ask_ai()
             case "2":
-                u1.check_history()
+                c1.check_history()
             case "3":
-                u1.delete_history()
+                c1.delete_history()
                 #break 选项里的函数报错才break
             case "4":
                 prompt = input("What is the prompt:")

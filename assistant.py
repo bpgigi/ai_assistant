@@ -1,65 +1,72 @@
 import json
 import config
-class User:
-    def __init__(self):
-        #history_dict = {}->不行，必须加self
-
-        self.history_dict = [
-            {"role":"user","content":""}, #u1.history_dict[0]["content"]  偶数个
-            {"role":"assistant","content":""},
-        ]
-        #定义就加载数据
-        self.load_history()
-    def load_history(self):
-        try:
-            with open("history.json", "r", encoding="utf-8") as f:
-                self.history_dict = json.load(f)
-        except FileNotFoundError:
-            print("没有数据文件")
-
-    # flag = True
-    # user1 = config.User("lll")
-    def add_history(self, s, flag):
-        if flag:
-            user_dict = {"role":"user","content":s}
-            # self.history_dict["user"].append(s)
-            self.history_dict.append(user_dict)
-        else:
-            assistant_dict = {"role":"assistant","content":s}
-            self.history_dict.append(assistant_dict)
-
-        with open("history.json", "w", encoding="utf-8") as f:
-            json.dump(self.history_dict, f, ensure_ascii=False, indent=4)
-    def ask_ai(self):
-        # question = input()
-        question = input("What is the question:")
-        # all_questions = question + str(self.history_dict)
-        self.add_history(question, True)
-        #messages = self.history_dict +
-        recent_messages = self.history_dict[-11:]
-        answer = config.ask_question(recent_messages)
-        #answer = config.ask_question(self.history_dict)
-        self.add_history(answer,False)
-    def check_history(self):
-        print(self.history_dict)
-        # choice = input("你想要哪个历史记录？你的问题->1,我的回答->2:")
-        # if choice == "1":
-        #     print(self.history_dict["user"])
-        # else:
-        #     print(self.history_dict["assistant"])
-    def delete_history(self):
-        # 清空直接空字典？
-        # self.history_dict = {"user": [], "assistant": []}
-        self.history_dict = [
-            # {"role": "user", "content": ""},  # u1.history_dict[0]["content"]  偶数个
-            # {"role": "assistant", "content": ""},
-        ]
-        with open("history.json", "w", encoding="utf-8") as f:
-            json.dump(self.history_dict, f, ensure_ascii=False, indent=4)
-    # def reset_ai(self):
-    #     pass
+from Conversation import Conversation
+# class User:
+#     def __init__(self):
+#         #history_dict = {}->不行，必须加self
+#
+#         self.history_dict = [
+#             {"role":"user","content":""}, #u1.history_dict[0]["content"]  偶数个
+#             {"role":"assistant","content":""},
+#         ]
+#         #定义就加载数据
+#         self.load_history()
+#     def load_history(self):
+#         try:
+#             with open("history.json", "r", encoding="utf-8") as f:
+#                 self.history_dict = json.load(f)
+#         except FileNotFoundError:
+#             print("没有数据文件")
+#
+#     # flag = True
+#     # user1 = config.User("lll")
+#     def add_history(self, s, flag):
+#         if flag:
+#             user_dict = {"role":"user","content":s}
+#             # self.history_dict["user"].append(s)
+#             self.history_dict.append(user_dict)
+#         else:
+#             assistant_dict = {"role":"assistant","content":s}
+#             self.history_dict.append(assistant_dict)
+#
+#         with open("history.json", "w", encoding="utf-8") as f:
+#             json.dump(self.history_dict, f, ensure_ascii=False, indent=4)
+#     # def ask_ai(self):
+#     #     # question = input()
+#     #     question = input("What is the question:")
+#     #     # all_questions = question + str(self.history_dict)
+#     #     self.add_history(question, True)
+#     #     #messages = self.history_dict +
+#     #     recent_messages = self.history_dict[-11:]
+#     #     answer = config.ask_question(recent_messages)
+#     #     #answer = config.ask_question(self.history_dict)
+#     #     if answer is not None:
+#     #         print(answer)
+#     #         self.add_history(answer, False)
+#     #     else:
+#     #         print("AI 没有成功回答，请稍后重试。")
+#     #     #self.add_history(answer,False)
+#     def check_history(self):
+#         print(self.history_dict)
+#         # choice = input("你想要哪个历史记录？你的问题->1,我的回答->2:")
+#         # if choice == "1":
+#         #     print(self.history_dict["user"])
+#         # else:
+#         #     print(self.history_dict["assistant"])
+#     def delete_history(self):
+#         # 清空直接空字典？
+#         # self.history_dict = {"user": [], "assistant": []}
+#         self.history_dict = [
+#             # {"role": "user", "content": ""},  # u1.history_dict[0]["content"]  偶数个
+#             # {"role": "assistant", "content": ""},
+#         ]
+#         with open("history.json", "w", encoding="utf-8") as f:
+#             json.dump(self.history_dict, f, ensure_ascii=False, indent=4)
+#     # def reset_ai(self):
+#     #     pass
 class Assistant:
-    def __init__(self):
+    def __init__(self,conversation):
+        self.conversation = conversation
         self.prompt = ""
         self.load_prompt()
     def load_prompt(self):
@@ -71,7 +78,21 @@ class Assistant:
             with open("prompt.json", "w",encoding="utf-8") as f:
                 self.prompt = "You are a helpful assistant"
                 json.dump(self.prompt, f, ensure_ascii=False, indent=4)
-
+    def ask_ai(self):
+        # question = input()
+        question = input("What is the question:")
+        # all_questions = question + str(self.history_dict)
+        self.conversation.add_history(question,True)
+        #messages = self.history_dict +
+        recent_messages = self.conversation.history_dict[-11:]
+        answer = config.ask_question(recent_messages)
+        #answer = config.ask_question(self.history_dict)
+        if answer is not None:
+            print(answer)
+            self.conversation.add_history(answer, False)
+        else:
+            print("AI 没有成功回答，请稍后重试。")
+        #self.add_history(answer,False)
     def set_prompt(self,prompt):
         self.prompt = prompt
         with open("prompt.json", "w", encoding="utf-8") as f:
