@@ -18,14 +18,24 @@ class Conversation:
         except FileNotFoundError:
             print("没有数据文件")
 
-    def add_history(self, s , flag = True):
-        if flag:
-            user_dict = {"role":"user","content":s}
-            # self.history_dict["user"].append(s)
-            self.history_dict.append(user_dict)
-        else:
-            assistant_dict = {"role":"assistant","content":s}
-            self.history_dict.append(assistant_dict)
+    # def add_history(self, s , flag = True):
+    #     if flag:
+    #         user_dict = {"role":"user","content":s}
+    #         # self.history_dict["user"].append(s)
+    #         self.history_dict.append(user_dict)
+    #     else:
+    #         assistant_dict = {"role":"assistant","content":s}
+    #         self.history_dict.append(assistant_dict)
+    #
+    #     with open("history.json", "w", encoding="utf-8") as f:
+    #         json.dump(self.history_dict, f, ensure_ascii=False, indent=4)
+    def add_history(self,role,content):
+        self.history_dict.append({"role":role,"content":content})
+            # user_dict = {"role":"user","content":content}
+            # self.history_dict.append(user_dict)
+            #
+            # assistant_dict = {"role":"assistant","content":s}
+            # self.history_dict.append(assistant_dict)
 
         with open("history.json", "w", encoding="utf-8") as f:
             json.dump(self.history_dict, f, ensure_ascii=False, indent=4)

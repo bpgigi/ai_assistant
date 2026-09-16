@@ -15,18 +15,18 @@ class Assistant:
             with open("prompt.json", "w",encoding="utf-8") as f:
                 self.prompt = "You are a helpful assistant"
                 json.dump(self.prompt, f, ensure_ascii=False, indent=4)
-    def ask_ai(self):
+    def ask_ai(self,question):
         # question = input()
-        question = input("What is the question:")
+        #question = input("What is the question:")
         # all_questions = question + str(self.history_dict)
-        self.conversation.add_history(question,True)
+        self.conversation.add_history("user", question)
         #messages = self.history_dict +
         recent_messages = self.conversation.history_dict[-11:]
         answer = config.ask_question(recent_messages)
         #answer = config.ask_question(self.history_dict)
         if answer is not None:
             print(answer)
-            self.conversation.add_history(answer, False)
+            self.conversation.add_history("assistant",answer)
         else:
             print("AI 没有成功回答，请稍后重试。")
         #self.add_history(answer,False)

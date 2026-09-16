@@ -19,9 +19,9 @@ if __name__ == "__main__":
         #while True:   --->死循环一直一个case执行
         match choice:
             case "1":
-                # question = input("What is the question:")
                 # config.ask_question(question)
-                assist1.ask_ai()
+                question = input("What is the question:")
+                assist1.ask_ai(question)
             case "2":
                 c1.check_history()
             case "3":
