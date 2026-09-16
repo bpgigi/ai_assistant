@@ -2,7 +2,7 @@
 import os
 import json
 from openai import OpenAI
-
+from openai import AuthenticationError, APITimeoutError, APIConnectionError
 #不是接受question而是messages，只需要接收数据，config.py 根本不用知道：history.json 在哪里，User 是什么，历史怎么保存
 def ask_question(messages):
     try:
@@ -24,9 +24,6 @@ def ask_question(messages):
             extra_body={"thinking": {"type": "enabled"}}
         )
 
-        #print(response.choices[0].message.content) #-----><class 'str'>
-        # print(type(response.choices[0].message.content))
-        # answer = response.choices[0].message.content
 
         return response.choices[0].message.content
         # answer = ""
