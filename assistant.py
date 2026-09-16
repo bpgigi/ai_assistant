@@ -33,12 +33,13 @@ class User:
     def ask_ai(self):
         # question = input()
         question = input("What is the question:")
-        all_questions = question + str(self.history_dict)
-        answer = config.ask_question(all_questions)
-        self.add_history(question,True)
-
+        # all_questions = question + str(self.history_dict)
+        self.add_history(question, True)
+        #messages = self.history_dict +
+        recent_messages = self.history_dict[-11:]
+        answer = config.ask_question(recent_messages)
+        #answer = config.ask_question(self.history_dict)
         self.add_history(answer,False)
-        #print(answer)
     def check_history(self):
         print(self.history_dict)
         # choice = input("你想要哪个历史记录？你的问题->1,我的回答->2:")
