@@ -16,12 +16,9 @@ class Assistant:
                 self.prompt = "You are a helpful assistant"
                 json.dump(self.prompt, f, ensure_ascii=False, indent=4)
     def ask_ai(self,question):
-        # question = input()
-        #question = input("What is the question:")
-        # all_questions = question + str(self.history_dict)
         self.conversation.add_history("user", question)
         #messages = self.history_dict +
-        recent_messages = self.conversation.history_dict[-11:]
+        recent_messages = self.conversation.history[-11:]
         answer = config.ask_question(recent_messages)
         #answer = config.ask_question(self.history_dict)
         if answer is not None:
