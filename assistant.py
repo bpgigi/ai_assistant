@@ -1,5 +1,8 @@
 import json
 import config
+from Conversation import Conversation
+
+
 #from Conversation import Conversation
 class Assistant:
     def __init__(self,conversation):
@@ -16,14 +19,14 @@ class Assistant:
                 self.prompt = "You are a helpful assistant"
                 json.dump(self.prompt, f, ensure_ascii=False, indent=4)
     def ask_ai(self,question):
-        self.conversation.add_history("user", question)
+        self.conversation.add_user_message(question)
         #messages = self.history_dict +
         recent_messages = self.conversation.history[-11:]
         answer = config.ask_question(recent_messages)
         #answer = config.ask_question(self.history_dict)
         if answer is not None:
             print(answer)
-            self.conversation.add_history("assistant",answer)
+            self.conversation.add_assistant_message(answer)
         else:
             print("AI 没有成功回答，请稍后重试。")
         #self.add_history(answer,False)
