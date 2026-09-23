@@ -1,4 +1,5 @@
-from openai.types.conversations import conversation
+
+import assistant
 from database import Database
 from Conversation import Conversation
 from assistant import Assistant
@@ -23,27 +24,28 @@ if __name__ == "__main__":
     else:
         conversation_id = int(choice)
 
-    # c1 = Conversation()
-    # assist1 = Assistant(c1)
-    # print("="*20)
-    # while True:
-    #     print_hi()
-    #     choice = input()
-    #     #while True:   --->死循环一直一个case执行
-    #     match choice:
-    #         case "1":
-    #             # config.ask_question(question)
-    #             question = input("What is the question:")
-    #             assist1.ask_ai(question)
-    #         case "2":
-    #             c1.check_history()
-    #         case "3":
-    #             c1.delete_history()
-    #             #break 选项里的函数报错才break
-    #         case "4":
-    #             prompt = input("What is the prompt:")
-    #             assist1.set_prompt(prompt)
-    #         case "5":
-    #             break
+    conversation = Conversation(conversation_id)
+    assistant = Assistant(conversation)
+
+    print("="*20)
+    while True:
+        print_hi()
+        choice = input()
+        #while True:   --->死循环一直一个case执行
+        match choice:
+            case "1":
+                # config.ask_question(question)
+                question = input("What is the question:")
+                assistant.ask_ai(question)
+            case "2":
+                conversation.check_history()
+            case "3":
+                conversation.delete_history()
+                #break 选项里的函数报错才break
+            case "4":
+                prompt = input("What is the prompt:")
+                assistant.set_prompt(prompt)
+            case "5":
+                break
 
 
