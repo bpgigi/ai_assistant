@@ -22,6 +22,7 @@ class Database:
                 role TEXT NOT NULL,
                 content TEXT NOT NULL,
                 FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+                    on delete cascade
                 )
             ''')
     def create_conversation(self,title):
@@ -38,6 +39,11 @@ class Database:
             cursor = conn.cursor()
             cursor.execute('''select id,title from conversations order by id desc ''')
             return cursor.fetchall()
+    def delete_conversation(self,conversation_id):
+        with self.connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute("delete from conversations where id = ?",(conversation_id,))
+            return cursor.rowcount
     def add_message(self,conversation_id,role,content):
         with self.connect() as conn:
             cursor = conn.cursor()
