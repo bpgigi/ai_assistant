@@ -64,3 +64,4 @@ class Database:
             cursor.execute('''
             delete from messages where conversation_id = ?''',
             (conversation_id,))
+            return cursor.rowcount

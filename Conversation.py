@@ -16,5 +16,6 @@ class Conversation:
     def check_history(self):
         print(self.history)
     def delete_history(self):
-        self.db.delete_messages(self.conversation_id)
+        delete_count = self.db.delete_messages(self.conversation_id)
         self.history = []
+        print(f"已删除{delete_count}条历史信息")
