@@ -29,7 +29,7 @@ class Database:
                 )
             #返回刚刚插入的那条数据的 id。
             return cursor.lastrowid
-    def get_conversation(self):
+    def get_conversations(self):
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
             cursor.execute('''select id,title from conversations order by id desc ''')

@@ -14,7 +14,7 @@ def print_hi():
 
 if __name__ == "__main__":
     db = Database()
-    conversations = db.get_conversation()
+    conversations = db.get_conversations()
     print("已有会话：")
     for conversation_id,title in conversations:
         print(conversation_id,title)
