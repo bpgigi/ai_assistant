@@ -51,6 +51,7 @@ class Database:
             cursor = conn.cursor()
             cursor.execute("delete from conversations where id = ?",(conversation_id,))
             return cursor.rowcount
+
     def add_message(self,conversation_id,role,content):
         with self.connect() as conn:
             cursor = conn.cursor()
