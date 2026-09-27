@@ -39,6 +39,13 @@ class Database:
             cursor = conn.cursor()
             cursor.execute('''select id,title from conversations order by id desc ''')
             return cursor.fetchall()
+    def get_conversation(self,conversation_id):
+        with self.connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+            select id,title from conversations where id = ?''',
+                           (conversation_id,))
+            return cursor.fetchone()
     def delete_conversation(self,conversation_id):
         with self.connect() as conn:
             cursor = conn.cursor()

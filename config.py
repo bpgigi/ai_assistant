@@ -1,8 +1,10 @@
 # Please install OpenAI SDK first: `pip3 install openai`
 import os
 import json
+from dotenv import load_dotenv
 from openai import OpenAI
 from openai import AuthenticationError, APITimeoutError, APIConnectionError
+load_dotenv()
 #不是接受question而是messages，只需要接收数据，config.py 根本不用知道：history.json 在哪里，User 是什么，历史怎么保存
 def ask_question(messages):
     try:
