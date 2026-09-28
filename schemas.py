@@ -4,3 +4,12 @@ class ConversationCreate(BaseModel):
     title: str
 class MessageCreate(BaseModel):
     content: str
+
+class ConversationResponse(BaseModel):
+    id: int
+    title: str
+class MessageResponse(BaseModel):
+    role:str
+    content: str
+class MessageAnswerResponse(BaseModel):
+    answer: str

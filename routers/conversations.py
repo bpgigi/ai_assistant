@@ -1,12 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 
 from database import Database
-from schemas import ConversationCreate
+from dependencies import get_db,get_existing_conversation
+from schemas import ConversationCreate,ConversationResponse
 
-router = APIRouter()
-db = Database()
-@router.get("/conversations")
-def get_conversations():
+router = APIRouter(
+    prefix="/conversations",
+    tags=["conversations"],
+)
+
+@router.get("/",response_model=list[ConversationResponse])
+def get_conversations(db:Database=Depends(get_db)):
     rows = db.get_conversations()
     return [
         {
@@ -15,28 +19,30 @@ def get_conversations():
         }
         for row in rows
     ]
-@router.get("/conversations/{conversation_id}")
-def get_conversation(conversation_id:int):
-    row = db.get_conversation(conversation_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+@router.get("/{conversation_id}",",response_model=ConversationResponse")
+def get_conversation(
+        conversation = Depends(get_existing_conversation)
+):
+
     return {
-        "id":row[0],
-        "title":row[1]
+        "id":conversation[0],
+        "title":conversation[1]
     }
 
-@router.post("/conversations")
-def create_conversation(conversation: ConversationCreate):
+@router.post("/",response_model=ConversationResponse,status_code=201)
+def create_conversation(conversation: ConversationCreate, db:Database=Depends(get_db)):
     conversation_id = db.create_conversation(conversation.title)
     return {
         "id":conversation_id,
-        "title":conversation.title
+        "title":conversation.title,
     }
-@router.delete("/conversations/{conversation_id}")
-def delete_conversation(conversation_id:int):
-    rowcount = db.delete_conversation(conversation_id)
-    if rowcount == 0:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+@router.delete("/{conversation_id}",status_code=200)
+def delete_conversation(
+        conversation_id:int,
+        conversation = Depends(get_existing_conversation),
+        db:Database=Depends(get_db)
+):
+    db.delete_conversation(conversation_id)
     return {
         "content":"Conversation deleted",
         "id":conversation_id

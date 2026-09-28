@@ -1,28 +1,31 @@
-from fastapi import APIRouter, HTTPException
-
-import assistant
-from Conversation import Conversation
-from schemas import MessageCreate
+from fastapi import APIRouter, HTTPException, Depends
+from dependencies import get_db,get_existing_conversation
+from schemas import MessageCreate,MessageResponse,MessageAnswerResponse
 from database import Database
 from Conversation import Conversation
 from assistant import Assistant
 
-db = Database()
-router = APIRouter()
-@router.get("/conversations/{conversation_id}/messages")
-def get_messages(conversation_id: int):
-    #先检查conversation是否存在
-    conversation = db.get_conversation(conversation_id)
-    if conversation is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    #conversation不存在—-》404 ，存在没东西-》[]
+router = APIRouter(
+    prefix="/conversations",
+    tags=["messages"]
+)
+@router.get("/{conversation_id}/messages",response_model=list[MessageResponse])
+def get_messages(
+        conversation_id: int,
+        conversation = Depends(get_existing_conversation),
+        db: Database = Depends(get_db)
+):
     messages = db.get_messages(conversation_id)
     return messages
-@router.post("/conversations/{conversation_id}/messages")
-def send_message(conversation_id: int, message: MessageCreate):
-    conversation = db.get_conversation(conversation_id)
-    if conversation is None:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+@router.post("/{conversation_id}/messages",response_model=MessageAnswerResponse)
+def send_message(
+        conversation_id: int,
+        message: MessageCreate,
+        conversation_row = Depends(get_existing_conversation)
+):
+    # conversation_row = db.get_conversation(conversation_id)
+    # if conversation_row is None:
+    #     raise HTTPException(status_code=404, detail="Conversation not found")
     conversation = Conversation(conversation_id)
     assistant = Assistant(conversation)
     answer = assistant.ask_ai(message.content)
