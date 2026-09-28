@@ -1,9 +1,7 @@
 import json
-import config
+import llm_service
 from Conversation import Conversation
 
-
-#from Conversation import Conversation
 class Assistant:
     def __init__(self,conversation):
         self.conversation = conversation
@@ -21,13 +19,18 @@ class Assistant:
 
     def ask_ai(self,question):
         recent_messages = self.conversation.history[-10:]
-        messages = recent_messages + [
+        messages = [
+            {
+                "role":"system",
+                "content":self.prompt
+            }
+        ] + recent_messages + [
             {
                 "role":"user",
                 "content":question
             }
         ]
-        answer = config.ask_question(messages)
+        answer = llm_service.ask_question(messages)
 
         self.conversation.add_user_message(question)
         self.conversation.add_assistant_message(answer)
