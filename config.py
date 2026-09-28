@@ -4,6 +4,7 @@ import json
 from dotenv import load_dotenv
 from openai import OpenAI
 from openai import AuthenticationError, APITimeoutError, APIConnectionError
+from exceptions import AIServiceError
 load_dotenv()
 #不是接受question而是messages，只需要接收数据，config.py 根本不用知道：history.json 在哪里，User 是什么，历史怎么保存
 def ask_question(messages):
@@ -46,8 +47,7 @@ def ask_question(messages):
         print("无法连接服务器")
         return None
     except Exception as e:
-        print("请求AI失败",e)
-        return None
+        raise AIServiceError("AI service error") from e
 
 if __name__ == "__main__":
     pass

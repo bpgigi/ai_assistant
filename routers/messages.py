@@ -29,8 +29,7 @@ def send_message(
     conversation = Conversation(conversation_id)
     assistant = Assistant(conversation)
     answer = assistant.ask_ai(message.content)
-    if answer is None:
-        raise HTTPException(status_code=500, detail="AI连接失败")
+
     return {
         "answer": answer
     }
