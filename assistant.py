@@ -28,8 +28,7 @@ class Assistant:
             }
         ]
         answer = config.ask_question(messages)
-        if answer is None:
-            return None
+
         self.conversation.add_user_message(question)
         self.conversation.add_assistant_message(answer)
         return answer

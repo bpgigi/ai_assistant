@@ -1,10 +1,12 @@
 # Please install OpenAI SDK first: `pip3 install openai`
 import os
 import json
+import logging
+logger = logging.getLogger(__name__)
 from dotenv import load_dotenv
 from openai import OpenAI
 from openai import AuthenticationError, APITimeoutError, APIConnectionError
-from exceptions import AIServiceError
+from exceptions import AIServiceError,AIServiceTimeoutError,AIServiceConnectionError
 load_dotenv()
 #不是接受question而是messages，只需要接收数据，config.py 根本不用知道：history.json 在哪里，User 是什么，历史怎么保存
 def ask_question(messages):
@@ -38,15 +40,16 @@ def ask_question(messages):
         #         answer += content
         # return answer
     except AuthenticationError as e:
-        print("API认证失败",e)
-        return None
+        logger.exception("API认证失败")
+        raise AIServiceError("AI service error") from e
     except APITimeoutError as e:
-        print("请求超时",e)
-        return None
-    except APIConnectionError:
-        print("无法连接服务器")
-        return None
+        logger.exception("请求超时")
+        raise AIServiceTimeoutError("AI service timeout") from e
+    except APIConnectionError as e:
+        logger.exception("无法连接服务器")
+        raise AIServiceConnectionError("AI service connection failed") from e
     except Exception as e:
+        logger.exception("未知AI调用异常")
         raise AIServiceError("AI service error") from e
 
 if __name__ == "__main__":

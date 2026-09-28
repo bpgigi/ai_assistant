@@ -19,7 +19,7 @@ def get_conversations(db:Database=Depends(get_db)):
         }
         for row in rows
     ]
-@router.get("/{conversation_id}",",response_model=ConversationResponse")
+@router.get("/{conversation_id}",response_model=ConversationResponse)
 def get_conversation(
         conversation = Depends(get_existing_conversation)
 ):
