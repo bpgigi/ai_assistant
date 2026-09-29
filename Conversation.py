@@ -1,8 +1,8 @@
 from database import Database
 #管理历史信息
 class Conversation:
-    def __init__(self,conversation_id):
-        self.db = Database()
+    def __init__(self,conversation_id,db):
+        self.db = db
         self.conversation_id = conversation_id
         self.history = self.db.get_messages(conversation_id)
 

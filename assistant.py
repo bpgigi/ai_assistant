@@ -1,7 +1,5 @@
 import json
 import llm_service
-from Conversation import Conversation
-
 class Assistant:
     def __init__(self,conversation):
         self.conversation = conversation

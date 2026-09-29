@@ -17,16 +17,18 @@ def get_messages(
 ):
     messages = db.get_messages(conversation_id)
     return messages
-@router.post("/{conversation_id}/messages",response_model=MessageAnswerResponse)
+@router.post(
+    "/{conversation_id}/messages",
+    response_model=MessageAnswerResponse
+)
 def send_message(
         conversation_id: int,
         message: MessageCreate,
-        conversation_row = Depends(get_existing_conversation)
+        conversation_row = Depends(get_existing_conversation),
+        db: Database = Depends(get_db)
 ):
-    # conversation_row = db.get_conversation(conversation_id)
-    # if conversation_row is None:
-    #     raise HTTPException(status_code=404, detail="Conversation not found")
-    conversation = Conversation(conversation_id)
+
+    conversation = Conversation(conversation_id,db)
     assistant = Assistant(conversation)
     answer = assistant.ask_ai(message.content)
 

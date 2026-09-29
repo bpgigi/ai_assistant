@@ -24,7 +24,7 @@ if __name__ == "__main__":
     else:
         conversation_id = int(choice)
 
-    conversation = Conversation(conversation_id)
+    conversation = Conversation(conversation_id,db)
     assistant = Assistant(conversation)
 
     print("="*20)
