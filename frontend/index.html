@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Assistant</title>
+</head>
+<body>
+
+<h1>AI Assistant</h1>
+<h2>会话列表</h2>
+<div id="conversationlist"></div>
+
+<input id="messageInput" type="text">
+<button id="sendButton">发送</button>
+<div id="chat"></div>
+
+<script>
+    const input = document.getElementById("messageInput");
+    const button = document.getElementById("sendButton");
+    const chat = document.getElementById("chat");
+    const conversationlist = document.getElementById("conversationlist");
+    function addMessage(role,content){
+        const p = document.createElement("p");
+        if (role === "user"){
+            p.textContent = "你："+content;
+        }else if (role === "assistant"){
+            p.textContent = "AI："+content;
+        }
+        chat.appendChild(p);
+    }
+
+    async function loadConversations(){
+        const response = await fetch(
+            "http://127.0.0.1:8000/conversations/"
+        );
+        const conversations = await response.json();
+        console.log(conversations);
+    }
+    loadConversations();
+
+    async function loadMessages(){
+        const response = await fetch(
+            "http://127.0.0.1:8000/conversations/2/messages"
+        );
+
+        const messages = await response.json();
+
+        for (const message of messages){
+            addMessage(message.role,message.content)
+        }
+    }
+    loadMessages();
+
+    button.onclick = async function () {
+        const message = input.value.trim();
+        if(!message){
+            return;
+        }
+
+        button.disabled = true
+
+        try{
+            addMessage("user",message);
+
+            const response = await fetch(
+                "http://127.0.0.1:8000/conversations/2/messages",
+                {
+                    method:"POST",
+                    headers:{
+                        "Content-Type":"application/json"
+                    },
+                    body:JSON.stringify({
+                        content:message
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData);
+            }
+            const data = await response.json();
+
+            addMessage("assistant",data.answer)
+            //发送后清空输入框
+            input.value="";
+        }catch (error){
+            console.error(error);
+            addMessage("assistant","请求失败:"+error.message);
+        }finally {
+            button.disabled = false;
+        }
+    };
+    input.addEventListener("keydown",function (event){
+        if (event.key === "Enter"){
+            button.click();
+        }
+    });
+</script>
+</body>
+</html>
