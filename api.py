@@ -13,9 +13,10 @@ logging.basicConfig(
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:63342",
-    ],
+    # allow_origins=[
+    #     "http://localhost:63342",
+    # ],
+    allow_origin_regex=r"http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -7,6 +7,8 @@
 <body>
 
 <h1>AI Assistant</h1>
+<input id="conversationTitle" type="text" placeholder="新会话标题">
+<button id="createConversationButton">新建会话</button>
 <h2>会话列表</h2>
 <div id="conversationlist"></div>
 
@@ -16,9 +18,49 @@
 
 <script>
     const input = document.getElementById("messageInput");
-    const button = document.getElementById("sendButton");
+    const sendButton = document.getElementById("sendButton");
     const chat = document.getElementById("chat");
-    const conversationlist = document.getElementById("conversationlist");
+    const conversationList = document.getElementById("conversationlist");
+    let currentConversationId = null;
+    const conversationTitleInput = document.getElementById("conversationTitle");
+    const createConversationButton = document.getElementById("createConversationButton")
+
+    //新建会话
+    createConversationButton.onclick = async function(){
+        const title = conversationTitleInput.value.trim()
+        if(!title){
+            return;
+        }
+        try{
+            const response = await fetch(
+                "http://127.0.0.1:8000/conversations/",
+                {
+                    method:"POST",
+                    headers:{
+                        "Content-Type":"application/json"
+                    },
+                    body:JSON.stringify({
+                        title:title
+                    })
+                }
+            );
+            if(!response.ok){
+                const errorData = await response.json();
+                throw new Error(errorData.detail);
+            }
+            const conversation = await response.json();
+            conversationTitleInput.value = "";
+            await loadConversations();
+            currentConversationId = conversation.id;
+            await loadMessages();
+        }catch (error){
+            console.error(error)
+            alert("创建会话失败："+error.message);
+        }
+    };
+
+    
+    //显示一条信息
     function addMessage(role,content){
         const p = document.createElement("p");
         if (role === "user"){
@@ -29,41 +71,127 @@
         chat.appendChild(p);
     }
 
+    //加载所有conversation
     async function loadConversations(){
-        const response = await fetch(
+        try{
+            const response = await fetch(
             "http://127.0.0.1:8000/conversations/"
-        );
-        const conversations = await response.json();
-        console.log(conversations);
-    }
-    loadConversations();
+            );
+            if(!response.ok){
+                throw new Error(
+                    "加载会话失败：" + response.status
+                );
+            }
 
-    async function loadMessages(){
-        const response = await fetch(
-            "http://127.0.0.1:8000/conversations/2/messages"
-        );
+            const conversations = await response.json();
+            conversationList.innerHTML = "";
+            //循环
+            for (const conversation of conversations) {
+                const button = document.createElement("button");
+                button.textContent = conversation.title;
 
-        const messages = await response.json();
-
-        for (const message of messages){
-            addMessage(message.role,message.content)
+                button.onclick = function(){
+                    currentConversationId = conversation.id;
+                    loadMessages();
+                };
+                conversationList.appendChild(button);
+                //删除按钮
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "删除";
+                deleteButton.onclick = function (){
+                    deleteConversation(conversation.id);
+                };
+                conversationList.appendChild(deleteButton);
+            }
+        }catch (error){
+            console.error(error);
         }
     }
-    loadMessages();
 
-    button.onclick = async function () {
+    //加载当前conversation的历史消息
+    async function loadMessages(){
+        if(currentConversationId === null){
+            return;
+        }
+        try {
+            const response = await fetch(
+                `http://127.0.0.1:8000/conversations/${currentConversationId}/messages`
+            );
+            if(!response.ok){
+                const errorData = await response.json();
+                throw new Error(errorData.detail);
+            }
+
+            const messages = await response.json();
+            //切换conversation时先清空页面
+            chat.innerHTML = "";
+            for (const message of messages){
+                addMessage(
+                    message.role,
+                    message.content
+                );
+            }
+
+        }catch (error){
+            console.error(error);
+
+            addMessage(
+                "assistant",
+                "加载聊天记录失败：" + error.message
+            );
+        }
+    }
+
+    //删除
+    async function deleteConversation(id) {
+    try {
+        const response = await fetch(
+            `http://127.0.0.1:8000/conversations/${id}`,
+            {
+                method:"DELETE"
+            }
+        );
+
+        // 这里判断 response.ok
+        if(!response.ok){
+            throw new Error("删除失败："+response.status);
+        }
+
+        // 删除成功后：
+        // 1. 如果删的是当前会话，currentConversationId 设为 null
+        if(id === currentConversationId) {
+            currentConversationId = null;
+           // 2. 清空 chat
+            chat.innerHTML = "";
+        }
+
+        // 3. 重新加载会话列表
+        await loadConversations();
+
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+    //发送信息
+    sendButton.onclick = async function () {
         const message = input.value.trim();
         if(!message){
             return;
         }
 
-        button.disabled = true
+        if(currentConversationId === null){
+            alert("请先选择一个会话");
+            return;
+        }
+
+        sendButton.disabled = true;
 
         try{
             addMessage("user",message);
 
             const response = await fetch(
-                "http://127.0.0.1:8000/conversations/2/messages",
+                `http://127.0.0.1:8000/conversations/${currentConversationId}/messages`,
                 {
                     method:"POST",
                     headers:{
@@ -77,25 +205,32 @@
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData);
+                throw new Error(errorData.detail);
             }
+
             const data = await response.json();
 
             addMessage("assistant",data.answer)
             //发送后清空输入框
             input.value="";
+
         }catch (error){
             console.error(error);
             addMessage("assistant","请求失败:"+error.message);
         }finally {
-            button.disabled = false;
+            sendButton.disabled = false;
         }
     };
+
+    //Enter发送
     input.addEventListener("keydown",function (event){
         if (event.key === "Enter"){
-            button.click();
+            sendButton.click();
         }
     });
+
+    //页面打开时加载conversation
+    loadConversations();
 </script>
 </body>
 </html>
