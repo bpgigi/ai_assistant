@@ -30,8 +30,12 @@ def send_message(
 
     conversation = Conversation(conversation_id,db)
     assistant = Assistant(conversation)
-    answer = assistant.ask_ai(message.content)
+    answer = assistant.ask_ai(
+        message.content,
+        use_rag = message.use_rag
+    )
 
     return {
-        "answer": answer
+        "answer": answer,
+        "sources":assistant.last_sources
     }

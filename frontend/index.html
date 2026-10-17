@@ -14,6 +14,10 @@
 
 <input id="messageInput" type="text">
 <button id="sendButton">发送</button>
+<label>
+    <input type="checkbox" id="ragToggle">
+    启用知识库（RAG）
+</label>
 <div id="chat"></div>
 
 <script>
@@ -24,6 +28,28 @@
     let currentConversationId = null;
     const conversationTitleInput = document.getElementById("conversationTitle");
     const createConversationButton = document.getElementById("createConversationButton")
+    const ragToggle = document.getElementById("ragToggle");
+
+    function addSources(sources) {
+        if (!sources || sources.length === 0) {
+            return;
+        }
+
+        const sourceDiv = document.createElement("div");
+
+        sourceDiv.textContent = "参考来源：";
+
+        for (const source of sources) {
+            const item = document.createElement("div");
+
+            item.textContent =
+                `${source.source}（距离：${source.distance.toFixed(4)}）`;
+
+            sourceDiv.appendChild(item);
+        }
+
+        chat.appendChild(sourceDiv);
+    }
 
     //新建会话
     createConversationButton.onclick = async function(){
@@ -198,10 +224,12 @@
                         "Content-Type":"application/json"
                     },
                     body:JSON.stringify({
-                        content:message
+                        content:message,
+                        use_rag:ragToggle.checked
                     })
                 }
             );
+
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -211,6 +239,15 @@
             const data = await response.json();
 
             addMessage("assistant",data.answer)
+            addSources(data.sources);
+            if (data.sources && data.sources.length > 0) {
+                for (const source of data.sources) {
+                    console.log(
+                        "来源：", source.source,
+                        "距离：", source.distance
+                    );
+                }
+            }
             //发送后清空输入框
             input.value="";
 

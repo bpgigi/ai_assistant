@@ -1,4 +1,5 @@
 import chromadb
+import llm_service
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
 
@@ -42,3 +43,124 @@ def split_markdown(text):
         chunks.append("\n".join(current_chunk).strip())
 
     return chunks
+
+def index_documents(chunks,source):
+    collection.delete(
+        where={"source": source}
+    )
+
+    if not chunks:
+        return 0
+
+    model = get_model()
+    ids = [f"{Path(source).stem}_{i}" for i in range(len(chunks))]
+    embeddings = model.encode(chunks).tolist()
+    metadatas = [
+        {"source": source}
+        for _ in chunks
+    ]
+
+    collection.upsert(
+        ids=ids,
+        documents=chunks,
+        embeddings=embeddings,
+        metadatas=metadatas
+    )
+    return len(chunks)
+
+def retrieve(query, k=3, threshold=0.5):
+    if collection.count() == 0:
+        return []
+
+    model = get_model()
+    query_embedding = model.encode(query).tolist()
+
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=min(k, collection.count()),
+        include=["documents","distances","metadatas"]
+    )
+
+    documents = results["documents"][0]
+    distances = results["distances"][0]
+    metadatas = results["metadatas"][0]
+
+    retrieved = []
+
+    for document,distance,metadata in zip(documents,distances,metadatas):
+        if distance <= threshold:
+            item = {
+                "text": document,
+                "distance": distance,
+                "source": (metadata or {}).get("source", "unknown")
+            }
+            retrieved.append(item)
+
+    return retrieved
+
+def build_rag_context(results):
+    return "\n\n".join(item["text"] for item in results)
+
+def rag_answer(question):
+    results = retrieve(question, k=3, threshold=0.5)
+
+    if not results:
+        return "知识库中没有找到相关内容"
+
+    # 1. 从 results 提取文本，拼接为 context
+    context = "\n\n".join(item["text"] for item in results)
+
+    # 2. 构造 messages
+    # system: 要求只能根据 context 回答
+    # user: 提供 context 和 question
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "你是一个知识库问答助手。"
+                "只能根据提供的参考资料回答问题。"
+                "如果资料不足以回答，就说：知识库中没有足够的信息。"
+                "不要编造答案。"
+                )
+        },
+        {
+            "role": "user",
+            "content": f"参考资料：\n{context}\n\n问题：{question}"
+        }
+    ]
+
+    # 3. 调用 llm_service.ask_question(messages)
+    # 4. 返回回答
+    return llm_service.ask_question(messages)
+
+def rewrite_query(question,history):
+    if not history:
+        return question
+    messages = [
+                   {
+                       "role": "system",
+                       "content": (
+                           "你是一个查询改写助手。"
+                           "根据对话历史，将用户当前问题改写为一个独立、完整、适合知识库检索的问题。"
+                           "保持原意，不要回答问题，不要编造信息。"
+                           "只输出改写后的问题。"
+                       )
+                   }
+               ] + history + [
+                   {
+                       "role": "user",
+                       "content": question
+                   }
+               ]
+    rewritten_question = llm_service.ask_question(messages)
+    return rewritten_question
+
+if __name__ == "__main__":
+    text = load_markdown("study_notes.md")
+    chunks = split_markdown(text)
+
+    count = index_documents(chunks, "study_notes.md")
+    print("索引数量：", count)
+
+    results = retrieve("FastAPI Depends 是什么？")
+    print(results)
