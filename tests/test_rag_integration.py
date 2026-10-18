@@ -1,4 +1,5 @@
 import assistant as assistant_module
+import rag.service as rag_service
 
 def fake_retrieve(query,k = 3,threshold = 0.5):
     return []
@@ -196,3 +197,71 @@ def test_rag_multi_turn(monkeypatch):
 
     assert conversation.history[2]["content"] == question
     assert conversation.history[3]["content"] == answer
+
+import pytest
+from rag.service import retrieve
+
+
+def test_retrieve_invalid_k():
+    with pytest.raises(ValueError, match="k must be"):
+        retrieve("FastAPI", k=0)
+
+
+def test_retrieve_invalid_threshold():
+    with pytest.raises(ValueError, match="threshold must be"):
+        retrieve("FastAPI", threshold=-0.1)
+
+class FakeCollection:
+    def __init__(self):
+        self.last_k = None
+
+    def query(self, query_embeddings, n_results):
+        self.last_k = n_results
+
+        return {
+            "ids": [["doc_1"]],
+            "documents": [["FastAPI 使用 Depends"]],
+            "distances": [[0.6]],
+            "metadatas": [[{"source": "test.md"}]]
+        }
+class FakeModel:
+    def encode(self, text):
+        return [0.1, 0.2, 0.3]
+
+def test_retrieve_threshold_override(monkeypatch):
+    fake_collection = FakeCollection()
+
+    monkeypatch.setattr(
+        rag_service, "collection", fake_collection
+    )
+    monkeypatch.setattr(
+        rag_service, "get_model", lambda: FakeModel()
+    )
+
+    monkeypatch.setattr(
+        rag_service.settings, "rag_top_k", 3
+    )
+    monkeypatch.setattr(
+        rag_service.settings, "rag_threshold", 0.5
+    )
+
+    # 使用默认阈值
+    default_results = rag_service.retrieve("FastAPI")
+
+    # 显式覆盖阈值
+    override_results = rag_service.retrieve(
+        "FastAPI",
+        threshold=0.7
+    )
+
+    # TODO 1：验证默认阈值
+    assert default_results == []
+
+    # TODO 2：验证覆盖阈值
+    assert len(override_results) == 1
+
+    # TODO 3：验证文档 ID
+    assert override_results[0]["id"] == "doc_1"
+
+    # TODO 4：验证默认 k
+    assert fake_collection.last_k == 3

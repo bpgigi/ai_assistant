@@ -2,6 +2,8 @@ import chromadb
 import llm_service
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
+from config import settings
+
 
 _model = None
 
@@ -68,7 +70,21 @@ def index_documents(chunks,source):
     )
     return len(chunks)
 
-def retrieve(query, k=3, threshold=0.5):
+from config import settings
+
+def retrieve(query, k=None, threshold=None):
+    if k is None:
+        k = settings.rag_top_k
+
+    if threshold is None:
+        threshold = settings.rag_threshold
+
+    if k < 1:
+        raise ValueError("k must be >= 1")
+    if threshold < 0 or threshold > 2:
+        raise ValueError("threshold must be between 0 and 2")
+
+    # 下面保留原有检索逻辑
     if collection.count() == 0:
         return []
 
