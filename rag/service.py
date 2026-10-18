@@ -81,15 +81,18 @@ def retrieve(query, k=3, threshold=0.5):
         include=["documents","distances","metadatas"]
     )
 
+    ids = results["ids"][0]
     documents = results["documents"][0]
     distances = results["distances"][0]
     metadatas = results["metadatas"][0]
 
+
     retrieved = []
 
-    for document,distance,metadata in zip(documents,distances,metadatas):
+    for doc_id,document,distance,metadata in zip(ids,documents,distances,metadatas):
         if distance <= threshold:
             item = {
+                "id": doc_id,
                 "text": document,
                 "distance": distance,
                 "source": (metadata or {}).get("source", "unknown")
