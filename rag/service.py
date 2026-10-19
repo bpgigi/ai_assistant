@@ -7,12 +7,21 @@ from config import settings
 
 _model = None
 
-client = chromadb.PersistentClient(path="./chroma_data")
+collection = None
+def get_collection():
+    global collection
 
-collection = client.get_or_create_collection(
-    name="rag_study_notes",
-    configuration={"hnsw":{"space":"cosine"}}
-)
+    if collection is None:
+        client = chromadb.PersistentClient(
+            path="./chroma_data"
+        )
+
+        collection = client.get_or_create_collection(
+            name="rag_study_notes",
+            configuration={"hnsw": {"space": "cosine"}}
+        )
+
+    return collection
 
 def get_model():
     global _model
@@ -47,6 +56,7 @@ def split_markdown(text):
     return chunks
 
 def index_documents(chunks,source):
+    collection = get_collection()
     collection.delete(
         where={"source": source}
     )
@@ -73,6 +83,7 @@ def index_documents(chunks,source):
 from config import settings
 
 def retrieve(query, k=None, threshold=None):
+    collection = get_collection()
     if k is None:
         k = settings.rag_top_k
 

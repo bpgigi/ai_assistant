@@ -1,0 +1,8 @@
+fastapi[standard]
+openai
+pydantic
+pydantic-settings
+chromadb
+sentence-transformers
+numpy
+pytest

@@ -211,12 +211,27 @@ def test_retrieve_invalid_threshold():
     with pytest.raises(ValueError, match="threshold must be"):
         retrieve("FastAPI", threshold=-0.1)
 
-class FakeCollection:
-    def __init__(self):
-        self.last_k = None
+import numpy as np
 
-    def query(self, query_embeddings, n_results):
+
+class FakeModel:
+    def encode(self, text):
+        return np.array([0.1, 0.2, 0.3])
+
+
+class FakeCollection:
+    def __init__(self, count=1):
+        self.last_k = None
+        self.last_include = None
+        self._count = count
+
+    def count(self):
+        return self._count
+
+    # query() 保留你之前已经测试通过的实现
+    def query(self, query_embeddings, n_results, include=None):
         self.last_k = n_results
+        self.last_include = include
 
         return {
             "ids": [["doc_1"]],
@@ -224,9 +239,6 @@ class FakeCollection:
             "distances": [[0.6]],
             "metadatas": [[{"source": "test.md"}]]
         }
-class FakeModel:
-    def encode(self, text):
-        return [0.1, 0.2, 0.3]
 
 def test_retrieve_threshold_override(monkeypatch):
     fake_collection = FakeCollection()
@@ -264,4 +276,34 @@ def test_retrieve_threshold_override(monkeypatch):
     assert override_results[0]["id"] == "doc_1"
 
     # TODO 4：验证默认 k
+    assert fake_collection.last_k == 1
+
+def test_retrieve_k_override(monkeypatch):
+    fake_collection = FakeCollection(count=5)
+
+    monkeypatch.setattr(
+        rag_service, "collection", fake_collection
+    )
+    monkeypatch.setattr(
+        rag_service, "get_model", lambda: FakeModel()
+    )
+    monkeypatch.setattr(
+        rag_service.settings, "rag_top_k", 3
+    )
+    monkeypatch.setattr(
+        rag_service.settings, "rag_threshold", 0.5
+    )
+
+    # 使用默认 k
+    rag_service.retrieve("FastAPI")
     assert fake_collection.last_k == 3
+
+    # 显式覆盖 k
+    rag_service.retrieve("FastAPI", k=2)
+    assert fake_collection.last_k == 2
+
+    # 超过知识库文档数量
+    rag_service.retrieve("FastAPI", k=10)
+
+    # TODO：你来补充最后一个断言
+    assert fake_collection.last_k == 5
