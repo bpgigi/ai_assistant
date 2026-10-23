@@ -19,6 +19,15 @@
     启用知识库（RAG）
 </label>
 <div id="chat"></div>
+<section>
+    <h3>知识库管理</h3>
+    <input type="file" id="knowledgeFile" accept=".md">
+    <button id="uploadDocumentButton">上传并索引</button>
+    <button id="refreshDocumentsButton">
+        刷新知识库
+    </button>
+    <div id="documentList"></div>
+</section>
 
 <script>
     const input = document.getElementById("messageInput");
@@ -29,6 +38,134 @@
     const conversationTitleInput = document.getElementById("conversationTitle");
     const createConversationButton = document.getElementById("createConversationButton")
     const ragToggle = document.getElementById("ragToggle");
+
+    const documentList = document.getElementById(
+        "documentList"
+    );
+
+    const refreshDocumentsButton =
+        document.getElementById("refreshDocumentsButton");
+
+    async function loadDocuments() {
+        try {
+            const response = await fetch(
+                "http://127.0.0.1:8000/knowledge/documents"
+            );
+
+            if (!response.ok) {
+                throw new Error("获取知识库失败");
+            }
+
+            const documents = await response.json();
+
+            documentList.innerHTML = "";
+
+            for (const doc of documents) {
+                const item = document.createElement("div");
+
+                const label = document.createElement("span");
+                label.textContent =
+                    `${doc.source} (${doc.chunk_count} chunks) `;
+
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "删除索引";
+
+                deleteButton.onclick = async function () {
+                    const confirmed = confirm(
+                        `确定删除 ${doc.source} 的索引吗？\n原始 Markdown 文件会保留。`
+                    );
+            
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    deleteButton.disabled = true;
+
+                    try {
+                        const response = await fetch(
+                            "http://127.0.0.1:8000/knowledge/documents?source=" +
+                            encodeURIComponent(doc.source),
+                            {
+                                method: "DELETE"
+                            }
+                        );
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(data.detail || "删除失败");
+                        }
+
+                        alert(`已删除 ${data.deleted_chunks} 个 Chunk`);
+                        await loadDocuments();
+
+                    } catch (error) {
+                        alert(error.message);
+                        deleteButton.disabled = false;
+                    }
+                };
+
+                item.appendChild(label);
+                item.appendChild(deleteButton);
+                documentList.appendChild(item);
+            }
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    refreshDocumentsButton.onclick = loadDocuments;
+
+    loadDocuments();
+
+    const knowledgeFile = document.getElementById("knowledgeFile");
+    const uploadDocumentButton = document.getElementById("uploadDocumentButton");
+
+    uploadDocumentButton.onclick = async function () {
+        const file = knowledgeFile.files[0];
+
+        if (!file) {
+            alert("请先选择 Markdown 文件");
+            return;
+        }
+
+        if (!file.name.toLowerCase().endsWith(".md") ||
+            file.size > 2 * 1024 * 1024) {
+            alert("只支持不超过 2 MiB 的 Markdown 文件");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        uploadDocumentButton.disabled = true;
+
+        try {
+            const response = await fetch(
+                "http://127.0.0.1:8000/knowledge/documents",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "上传失败");
+            }
+
+            alert(`上传成功，索引了 ${data.chunk_count} 个 Chunk`);
+
+            knowledgeFile.value = "";
+            await loadDocuments();
+
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            uploadDocumentButton.disabled = false;
+        }
+    };
 
     function addSources(sources) {
         if (!sources || sources.length === 0) {

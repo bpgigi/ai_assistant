@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import conversations,messages
+from routers import conversations,messages,knowledge
 from fastapi.responses import JSONResponse
 from exceptions import AIServiceError,AIServiceTimeoutError,AIServiceConnectionError
 import logging
@@ -13,9 +13,7 @@ logging.basicConfig(
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    # allow_origins=[
-    #     "http://localhost:63342",
-    # ],
+
     allow_origin_regex=r"http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
@@ -23,6 +21,7 @@ app.add_middleware(
 )
 app.include_router(conversations.router)
 app.include_router(messages.router)
+app.include_router(knowledge.router)
 
 @app.exception_handler(AIServiceTimeoutError)
 async def ai_service_timeout_handler(request, exc):

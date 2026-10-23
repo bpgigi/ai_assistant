@@ -1,9 +1,9 @@
 import chromadb
 import llm_service
+import hashlib
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
 from config import settings
-
 
 _model = None
 
@@ -57,20 +57,29 @@ def split_markdown(text):
 
 def index_documents(chunks,source):
     collection = get_collection()
-    collection.delete(
-        where={"source": source}
-    )
 
     if not chunks:
+        collection.delete(
+            where={"source": source}
+        )
         return 0
 
     model = get_model()
-    ids = [f"{Path(source).stem}_{i}" for i in range(len(chunks))]
+
+    file_id = hashlib.sha256(
+        source.encode("utf-8")
+    ).hexdigest()[:16]
+    ids = [f"{file_id}_{i}" for i in range(len(chunks))]
+
     embeddings = model.encode(chunks).tolist()
     metadatas = [
         {"source": source}
         for _ in chunks
     ]
+
+    collection.delete(
+        where={"source": source}
+    )
 
     collection.upsert(
         ids=ids,
@@ -80,7 +89,6 @@ def index_documents(chunks,source):
     )
     return len(chunks)
 
-from config import settings
 
 def retrieve(query, k=None, threshold=None):
     collection = get_collection()
@@ -185,12 +193,76 @@ def rewrite_query(question,history):
     rewritten_question = llm_service.ask_question(messages)
     return rewritten_question
 
+#先把传来的相对路径改为绝对路径，再把改路径下的所有md切块存入embedding返回切了几个md文件
+def index_directory(folder_path, project_root=None):
+    if project_root is None:
+        project_root = Path(__file__).resolve().parent.parent
+
+    project_root = Path(project_root).resolve()
+    folder = (project_root / folder_path).resolve()
+
+    if not folder.is_relative_to(project_root):
+        raise ValueError("知识库目录必须位于项目根目录内")
+
+    total = 0
+
+    for file in sorted(folder.rglob("*.md")):
+        text = load_markdown(file)
+        chunks = split_markdown(text)
+
+        source = file.resolve().relative_to(project_root).as_posix()
+
+        count = index_documents(chunks, source)
+        total += count
+
+    return total
+
+
+def list_documents():
+    collection = get_collection()
+    data = collection.get(include=["metadatas"])
+
+    counts: dict[str, int] = {}
+
+    for metadata in data["metadatas"]:
+        source = (metadata or {}).get("source", "unknown")
+
+        if not isinstance(source, str):
+            source = "unknown"
+
+        counts[source] = counts.get(source, 0) + 1
+
+    documents = []
+
+    for source, count in counts.items():
+        documents.append({
+            "source": source,
+            "chunk_count": count
+        })
+
+    return documents
+
+
+def delete_document(source):
+    collection = get_collection()
+
+    # ① 获取指定 source 对应的记录
+    data = collection.get(
+        where= {"source": source},
+        include=[]
+    )
+
+    # ② 统计记录数量
+    count = len(data["ids"])
+
+    # ③ 如果没有记录，直接返回 0
+    if not count:
+        return 0
+
+    # ④ 删除指定 source 的记录
+    collection.delete(where={"source": source})
+
+    # ⑤ 返回删除数量
+    return count
 if __name__ == "__main__":
-    text = load_markdown("study_notes.md")
-    chunks = split_markdown(text)
-
-    count = index_documents(chunks, "study_notes.md")
-    print("索引数量：", count)
-
-    results = retrieve("FastAPI Depends 是什么？")
-    print(results)
+    print(list_documents())

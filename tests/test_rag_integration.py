@@ -307,3 +307,196 @@ def test_retrieve_k_override(monkeypatch):
 
     # TODO：你来补充最后一个断言
     assert fake_collection.last_k == 5
+
+def test_index_embedding_failure(monkeypatch):
+    fake_collection = FakeCollection()
+    fake_collection.delete_count = 0
+
+    monkeypatch.setattr(
+        rag_service, "collection", fake_collection
+    )
+    monkeypatch.setattr(
+        rag_service, "get_model", lambda: FakeModel()
+    )
+
+    def fail_encode(self,chunks):
+        raise RuntimeError("Embedding failed")
+
+    monkeypatch.setattr(
+        FakeModel,
+        "encode",
+        fail_encode
+    )
+    def fake_delete(where):
+        fake_collection.delete_count += 1
+
+    monkeypatch.setattr(
+        fake_collection,
+        "delete",
+        fake_delete,
+        raising=False
+    )
+    with pytest.raises(RuntimeError):
+        rag_service.index_documents(
+            ["FastAPI 使用 Depends 实现依赖注入"],
+            "knowledge/fastapi.md"
+        )
+
+    assert fake_collection.delete_count == 0
+
+class FakeIndexCollection:
+    def __init__(self):
+        self.saved_ids = []
+
+    def delete(self, where):
+        pass
+
+    def upsert(self, ids, documents, embeddings, metadatas):
+        self.saved_ids.append(ids.copy())
+def test_index_ids_unique(monkeypatch):
+    fake_collection = FakeIndexCollection()
+
+    monkeypatch.setattr(
+        rag_service, "collection", fake_collection
+    )
+    monkeypatch.setattr(
+        rag_service, "get_model", lambda: FakeModel()
+    )
+
+    rag_service.index_documents(
+        ["Python 基础"],
+        "knowledge/python/notes.md"
+    )
+
+    rag_service.index_documents(
+        ["FastAPI 基础"],
+        "knowledge/fastapi/notes.md"
+    )
+
+    # ③ 断言两次 upsert 的 ID 不相同
+    assert len(fake_collection.saved_ids) == 2
+    assert fake_collection.saved_ids[0]!=fake_collection.saved_ids[1]
+
+#=====================================相同来源重复索引时，ID 是否稳定。
+    rag_service.index_documents(
+        ["Python 基础更新版"],
+        "knowledge/python/notes.md"
+    )
+    assert fake_collection.saved_ids[0] == fake_collection.saved_ids[2]
+
+def test_tmp_path_example(tmp_path):
+    folder = tmp_path / "knowledge"
+
+    folder.mkdir()
+
+    file = folder / "fastapi.md"
+
+    file.write_text(
+        "# FastAPI\nDepends 实现依赖注入",
+        encoding="utf-8"
+    )
+
+    assert file.exists()
+
+def test_index_directory(monkeypatch, tmp_path):
+    folder = tmp_path / "knowledge"
+    folder.mkdir()
+
+    (folder / "fastapi.md").write_text(
+        "# FastAPI\nDepends 实现依赖注入",
+        encoding="utf-8"
+    )
+
+    (folder / "sqlite.md").write_text(
+        "# SQLite\n使用 PRAGMA 启用外键",
+        encoding="utf-8"
+    )
+
+    (folder / "git.md").write_text(
+        "# Git\nmerge用于合并分支",
+        encoding="utf-8"
+    )
+
+    saved_sources = []
+
+    def fake_index(chunks,source):
+        saved_sources.append(source)
+        return len(chunks)
+
+    monkeypatch.setattr(
+        rag_service, "index_documents", fake_index
+    )
+
+    total = rag_service.index_directory(
+        "knowledge",
+        project_root = tmp_path
+    )
+
+    # ① 总共索引了 3 个 Chunk
+    assert total == 3
+
+    # ② 索引函数调用了 3 次
+    assert len(saved_sources) == 3
+
+    # ③ 三个文件的来源路径都正确
+    assert set(saved_sources) == {
+        "knowledge/fastapi.md",
+        "knowledge/sqlite.md",
+        "knowledge/git.md"
+    }
+
+def test_list_documents(monkeypatch):
+
+    class FakeListCollection:
+        def get(self, include):
+            return {
+                "metadatas": [
+                    {"source": "fastapi.md"},
+                    {"source": "fastapi.md"},
+                    {"source": "git.md"},
+                    None
+                ]
+            }
+
+    fake_collection = FakeListCollection()
+
+    monkeypatch.setattr(
+        rag_service,
+        "collection",
+        fake_collection
+    )
+
+    documents = rag_service.list_documents()
+
+    assert len(documents) == 3
+
+    assert {"source": "fastapi.md", "chunk_count": 2} in documents
+    assert {"source": "git.md", "chunk_count": 1} in documents
+    assert {"source": "unknown", "chunk_count": 1} in documents
+
+class FakeDeleteCollection:
+    def __init__(self):
+        self.deleted_source = None
+
+    def get(self, where, include):
+        return {
+            "ids": ["chunk_0", "chunk_1"]
+        }
+
+    def delete(self, where):
+        self.deleted_source = where["source"]
+def test_delete_document(monkeypatch):
+    fake_collection = FakeDeleteCollection()
+
+    monkeypatch.setattr(
+        rag_service,
+        "collection",
+        fake_collection
+    )
+
+    count = rag_service.delete_document(
+        "knowledge/fastapi.md"
+    )
+
+    assert count == 2
+    assert fake_collection.deleted_source == "knowledge/fastapi.md"

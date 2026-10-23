@@ -28,7 +28,7 @@ class Assistant:
 
         if use_rag:
             search_query = rewrite_query(question,recent_messages)
-            results = retrieve(search_query,k=3,threshold=0.5)
+            results = retrieve(search_query)
 
             self.last_sources = results
 
