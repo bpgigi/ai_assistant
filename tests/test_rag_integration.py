@@ -44,10 +44,11 @@ class FakeConversation:
             "content": content
         })
 
-    def add_assistant_message(self, content):
+    def add_assistant_message(self, content,sources=None):
         self.history.append({
             "role": "assistant",
-            "content": content
+            "content": content,
+            "sources":sources if sources is not None else []
         })
 
 def test_rag_no_results(monkeypatch):
@@ -85,7 +86,8 @@ def test_rag_no_results(monkeypatch):
         },
         {
             "role": "assistant",
-            "content": answer
+            "content": answer,
+            "sources":[]
         }
     ]
 

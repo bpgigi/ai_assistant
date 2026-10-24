@@ -1,0 +1,17 @@
+.git
+.idea
+.venv
+.env
+.env.*
+!.env.example
+
+__pycache__
+*.pyc
+.pytest_cache
+
+*.db
+*.db-*
+chroma_data/
+knowledge/
+
+tests/

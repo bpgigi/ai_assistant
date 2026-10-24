@@ -1,4 +1,5 @@
 import sqlite3
+import json
 
 class Database:
     def __init__(self,db_name = "assistant.db"):
@@ -11,20 +12,42 @@ class Database:
     def create_tables(self):
         with self.connect() as conn:
             cursor = conn.cursor()
-            #conn.execute("PRAGMA foreign_keys = ON")
-            cursor.execute('''CREATE TABLE IF NOT EXISTS conversations(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL)
-            ''')
-            cursor.execute('''CREATE TABLE IF NOT EXISTS messages(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                conversation_id integer NOT NULL,
-                role TEXT NOT NULL,
-                content TEXT NOT NULL,
-                FOREIGN KEY (conversation_id) REFERENCES conversations(id)
-                    on delete cascade
-                )
-            ''')
+
+            cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS conversations
+                   (
+                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       title TEXT NOT NULL
+                   )
+                """)
+
+            cursor.execute("""
+                           CREATE TABLE IF NOT EXISTS messages
+                           (
+                               id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                               conversation_id INTEGER NOT NULL,
+                               role TEXT NOT NULL,
+                               content TEXT NOT NULL,
+                               sources TEXT NOT NULL DEFAULT '[]',
+                               FOREIGN KEY ( conversation_id)    
+                                     REFERENCES conversations(id)
+                               ON DELETE CASCADE)  
+                           """)
+
+            # 检查现有 messages 表有哪些字段
+            cursor.execute("PRAGMA table_info(messages)")
+            columns = [
+                row[1]
+                for row in cursor.fetchall()
+            ]
+
+            # 旧数据库缺少 sources 时，自动添加
+            if "sources" not in columns:
+                cursor.execute("""
+                               ALTER TABLE messages
+                                   ADD COLUMN sources TEXT NOT NULL DEFAULT '[]'
+                               """)
+
     def create_conversation(self,title):
         with self.connect() as conn:
             cursor = conn.cursor()
@@ -52,25 +75,37 @@ class Database:
             cursor.execute("delete from conversations where id = ?",(conversation_id,))
             return cursor.rowcount
 
-    def add_message(self,conversation_id,role,content):
+    def add_message(self, conversation_id, role, content, sources=None):
+        if sources is None:
+            sources = []
+
+        sources_json = json.dumps(sources, ensure_ascii=False)
+
         with self.connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                insert into messages(conversation_id,role,content) 
-                values (?,?,?)""",
-                (conversation_id,role,content))
-    def get_messages(self,conversation_id):
+            conn.execute("""
+                         INSERT INTO messages(conversation_id, role, content, sources)
+                         VALUES (?, ?, ?, ?)
+                         """, (conversation_id, role, content, sources_json))
+
+    def get_messages(self, conversation_id):
         with self.connect() as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                select role,content
-                from messages 
-                where conversation_id = ?
-                order by id''', (conversation_id,))
+            cursor = conn.execute("""
+                                  SELECT role, content, sources
+                                  FROM messages
+                                  WHERE conversation_id = ?
+                                  ORDER BY id
+                                  """, (conversation_id,))
+
             rows = cursor.fetchall()
             messages = []
-            for role,content in rows:
-                messages.append({"role":role,"content":content})
+
+            for role, content, sources_json in rows:
+                messages.append({
+                    "role": role,
+                    "content": content,
+                    "sources": json.loads(sources_json)
+                })
+
             return messages
     def delete_messages(self,conversation_id):
         with self.connect() as conn:

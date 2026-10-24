@@ -20,7 +20,13 @@ class Assistant:
 
     def ask_ai(self,question,use_rag = False):
         self.last_sources = []
-        recent_messages = self.conversation.history[-10:]
+        recent_messages = [
+            {
+                "role": message["role"],
+                "content": message["content"]
+            }
+            for message in self.conversation.history[-10:]
+        ]
 
         system_prompt = self.prompt
         user_content = question
@@ -68,7 +74,7 @@ class Assistant:
             answer = llm_service.ask_question(messages)
 
         self.conversation.add_user_message(question)
-        self.conversation.add_assistant_message(answer)
+        self.conversation.add_assistant_message(answer,sources=self.last_sources)
 
         return answer
 

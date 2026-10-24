@@ -9,14 +9,16 @@ class MessageCreate(BaseModel):
 class ConversationResponse(BaseModel):
     id: int
     title: str
-class MessageResponse(BaseModel):
-    role:str
-    content: str
 
 class SourceResponse(BaseModel):
     text: str
     distance: float
     source: str
+
+class MessageResponse(BaseModel):
+    role:str
+    content: str
+    sources: list[SourceResponse] = Field(default_factory=list)
 
 class MessageAnswerResponse(BaseModel):
     answer: str

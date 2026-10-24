@@ -8,10 +8,24 @@ class Conversation:
 
     def add_user_message(self,content):
         self.db.add_message(self.conversation_id,"user",content)
-        self.history.append({"role":"user","content":content})
-    def add_assistant_message(self,content):
-        self.db.add_message(self.conversation_id,"assistant",content)
-        self.history.append({"role":"assistant","content":content})
+        self.history.append({"role":"user","content":content,"sources":[]})
+
+    def add_assistant_message(self, content, sources=None):
+        if sources is None:
+            sources = []
+
+        self.db.add_message(
+            self.conversation_id,
+            "assistant",
+            content,
+            sources
+        )
+
+        self.history.append({
+            "role": "assistant",
+            "content": content,
+            "sources": sources
+        })
 
     def check_history(self):
         print(self.history)
