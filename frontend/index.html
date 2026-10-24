@@ -50,7 +50,7 @@
     async function loadDocuments() {
         try {
             const response = await fetch(
-                "http://127.0.0.1:8000/knowledge/documents"
+                "/knowledge/documents"
             );
 
             if (!response.ok) {
@@ -84,7 +84,7 @@
 
                     try {
                         const response = await fetch(
-                            "http://127.0.0.1:8000/knowledge/documents?source=" +
+                            "/knowledge/documents?source=" +
                             encodeURIComponent(doc.source),
                             {
                                 method: "DELETE"
@@ -126,7 +126,7 @@
 
                     try {
                         const response = await fetch(
-                            "http://127.0.0.1:8000/knowledge/documents/file?source=" +
+                            "/knowledge/documents/file?source=" +
                             encodeURIComponent(doc.source),
                             {method: "DELETE"}
                         );
@@ -186,7 +186,7 @@
 
         try {
             const response = await fetch(
-                "http://127.0.0.1:8000/knowledge/documents",
+                "/knowledge/documents",
                 {
                     method: "POST",
                     body: formData
@@ -246,7 +246,7 @@
 
         try {
             const response = await fetch(
-                "http://127.0.0.1:8000/knowledge/documents",
+                "/knowledge/documents",
                 {
                     method: "PUT",
                     body: formData
@@ -301,7 +301,7 @@
         }
         try{
             const response = await fetch(
-                "http://127.0.0.1:8000/conversations/",
+                "/conversations/",
                 {
                     method:"POST",
                     headers:{
@@ -343,7 +343,7 @@
     async function loadConversations(){
         try{
             const response = await fetch(
-            "http://127.0.0.1:8000/conversations/"
+            "/conversations/"
             );
             if(!response.ok){
                 throw new Error(
@@ -383,7 +383,7 @@
         }
         try {
             const response = await fetch(
-                `http://127.0.0.1:8000/conversations/${currentConversationId}/messages`
+                `/conversations/${currentConversationId}/messages`
             );
             if(!response.ok){
                 const errorData = await response.json();
@@ -415,7 +415,7 @@
     async function deleteConversation(id) {
     try {
         const response = await fetch(
-            `http://127.0.0.1:8000/conversations/${id}`,
+            `/conversations/${id}`,
             {
                 method:"DELETE"
             }
@@ -460,7 +460,7 @@
             addMessage("user",message);
 
             const response = await fetch(
-                `http://127.0.0.1:8000/conversations/${currentConversationId}/messages`,
+                `/conversations/${currentConversationId}/messages`,
                 {
                     method:"POST",
                     headers:{
